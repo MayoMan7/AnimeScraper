@@ -1,0 +1,67 @@
+from bs4 import BeautifulSoup
+import requests
+import json
+import csv
+from datetime import date
+
+
+def scraper(url, title_list, ratings_list):
+  page_to_scrape = requests.get(url)
+  soup = BeautifulSoup(page_to_scrape.text, 'html.parser')
+  title = soup.findAll(
+    "h3", class_="hoverinfo_trigger fl-l fs14 fw-b anime_ranking_h3")
+  rating_9 = soup.findAll("span", class_="text on score-label score-9")
+  rating_8 = soup.findAll("span", class_="text on score-label score-8")
+  rating_7 = soup.findAll("span", class_="text on score-label score-7")
+  rating_6 = soup.findAll("span", class_="text on score-label score-6")
+  add_titles(title, title_list)
+  add_ratings(rating_9, ratings_list)
+  add_ratings(rating_8, ratings_list)
+  add_ratings(rating_7, ratings_list)
+  add_ratings(rating_6, ratings_list)
+
+
+def add_titles(scraped_titles, list):
+  for i in scraped_titles:
+    list.append(i.getText())
+
+
+def add_ratings(scraped_ratings, list):
+  for i in scraped_ratings:
+    list.append(i.getText())
+
+
+def export_json(titles, ratings):
+  rankings = {}
+  for i in range(len(titles)):
+    rankings[titles[i]] = ratings[i]
+  today = str(date.today())
+  with open(today + "_rankings.json", "w") as outfile:
+    outfile.write(json.dumps(rankings))
+
+
+def export_csv(titles, ratings):
+  today = str(date.today())
+  with open(today + "_rankings.csv", "w") as outfile:
+    writer = csv.writer(outfile)
+    for i in range(len(titles)):
+      writer.writerow([titles[i], ratings[i]])
+
+
+titles = []
+ratings = []
+
+urls = [
+  "https://myanimelist.net/topanime.php",
+  "https://myanimelist.net/topanime.php?limit=50",
+  "https://myanimelist.net/topanime.php?limit=100",
+  "https://myanimelist.net/topanime.php?limit=150",
+  "https://myanimelist.net/topanime.php?limit=200",
+  "https://myanimelist.net/topanime.php?limit=250"
+]
+
+for i in urls:
+  scraper(i, titles, ratings)
+
+export_json(titles, ratings)
+export_csv(titles, ratings)
